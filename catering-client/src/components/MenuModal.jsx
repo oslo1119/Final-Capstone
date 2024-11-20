@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import CartPopover from "./CartPopover";
 import useCart from "../hooks/useCart";
 import { AuthContext } from "../contexts/AuthProvider";
@@ -19,8 +19,16 @@ const MenuModal = ({
   const [bookingCart, refetch] = useBookingCart();
   const [priceRange, setPriceRange] = useState(500);
   const [maxBudget, setMaxBudget] = useState(1000);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [filteredItems, setFilteredItems] = useState(menuItems);
+  const [view, setView] = useState("custom"); 
 
-  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (!showMenuModal) {
+      setSelectedCategory("all");
+    }
+  }, [showMenuModal]);
+  
   useEffect(() => {
     if (showMenuModal) {
       document.body.classList.add("overflow-hidden");
@@ -29,25 +37,64 @@ const MenuModal = ({
     }
   }, [showMenuModal]);
 
+  const filterItems = (category) => {
+    let filtered = menuItems;
+    
+    // Filter by category
+    if (category !== "all") {
+      filtered = filtered.filter(
+        (item) => item.category.toLowerCase() === category.toLowerCase()
+      );
+    }
+    
+    // Filter by budget
+    filtered = filtered.filter((item) => item.price <= priceRange);
+    
+    setFilteredItems(filtered);
+  };
+  
+
+  useEffect(() => {
+    filterItems(selectedCategory);
+  }, [selectedCategory, menuItems, priceRange]);
+
   if (!showMenuModal) return null;
 
+ 
+
+  const handleCategoryChange = (event) => {
+    setSelectedCategory(event.target.value);
+  };
+
   const handleAddToCart = (item) => {
+    const newTotal = orderTotal + item.price;
+    
+    if (newTotal > maxBudget) {
+      Swal.fire({
+        position: "center",
+        icon: "warning",
+        title: `Adding this item would exceed your budget of ₱${maxBudget}.`,
+        showConfirmButton: false,
+        timer: 1500,
+      });
+      return;
+    }
+  
     if (user && user.email) {
       const bookingItem = {
         email: user.email,
-        bookingItemId: item._id, // use item instead of bookingCart
+        bookingItemId: item._id,
         name: item.name,
         price: item.price,
-        quantity: 1, // set quantity as needed
+        quantity: 1,
         image: item.image,
       };
-
+  
       axios
         .post("http://localhost:6001/booking-cart", bookingItem)
         .then((response) => {
-          console.log(response);
           if (response) {
-            refetch(); // refetch cart
+            refetch();
             Swal.fire({
               position: "center",
               icon: "success",
@@ -58,11 +105,10 @@ const MenuModal = ({
           }
         })
         .catch((error) => {
-          console.log(error.response.data.message);
           Swal.fire({
             position: "center",
             icon: "warning",
-            title: `${error.response.data.message}`,
+            title: error.response?.data?.message || "An error occurred",
             showConfirmButton: false,
             timer: 1500,
           });
@@ -87,11 +133,19 @@ const MenuModal = ({
     (total, item) => total + item.price * item.quantity,
     0
   );
-  // Calculate total with discount
   const orderTotal = cartSubtotal;
 
   const toggleCartPopover = () => {
     setCartPopoverVisible((prev) => !prev);
+  };
+
+  const handleConfirm = () => {
+    onConfirm(bookingCart); // Pass bookingCart data to parent
+    handleMenuToggleModal(); // Close the modal
+  };
+
+  const handleViewChange = (newView) => {
+    setView(newView);
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
@@ -100,176 +154,92 @@ const MenuModal = ({
           Menu Order
         </h3>
         <div className="flex justify-between px-6 py-4 border-b border-gray-200">
-          {/* Compact Price Range Slider */}
+          {/* Budget Range Slider */}
           <div className="p-4 w-96">
-            <div className="mb-1 ">
-              <label
-                htmlFor="price-range"
-                className="block text-sm text-gray-700 font-medium "
-              >
-                Budget Range
-              </label>
-              <input
-                type="range"
-                id="price-range"
-                className="w-full accent-indigo-600"
-                min="0"
-                max={maxBudget}
-                value={priceRange}
-                onChange={(e) => setPriceRange(e.target.value)}
-              />
-            </div>
-
+            <label htmlFor="price-range" className="block text-sm font-medium text-gray-700">Budget Range</label>
+            <input
+              type="range"
+              id="price-range"
+              className="w-full accent-indigo-600"
+              min="0"
+              max={maxBudget}
+              value={priceRange}
+              onChange={(e) => setPriceRange(e.target.value)}
+            />
             <div className="flex justify-between text-sm text-gray-500">
-              <span id="minPrice">₱{priceRange}</span>
-              <span id="maxPrice">₱{maxBudget}</span>
+              <span>₱{priceRange}</span>
+              <span>₱{maxBudget}</span>
             </div>
-            <div className="mt-1">
-              <label
-                htmlFor="max-budget"
-                className="block text-sm text-gray-700 font-medium"
-              >
-                Estimated Budget
-              </label>
-              <input
-                type="number"
-                id="max-budget"
-                className="w-full p-1 border rounded-md text-sm text-gray-700"
-                min="0"
-                value={maxBudget}
-                onChange={(e) => setMaxBudget(Number(e.target.value))}
-              />
-            </div>
+            <label htmlFor="max-budget" className="block text-sm font-medium text-gray-700 mt-1">Enter your Budget</label>
+            <input
+              type="number"
+              id="max-budget"
+              className="w-full p-1 border rounded-md text-sm text-gray-700"
+              min="0"
+              value={maxBudget}
+              onChange={(e) => setMaxBudget(Number(e.target.value))}
+            />
+          </div>
+
+          {/* Filter Section */}
+          <div className="flex items-end mr-40">
+            <select className="select w-full max-w-xs" onChange={handleCategoryChange}>
+              <option value="all">All</option>
+              <option value="appetizers">Appetizer</option>
+              <option value="pork">Pork</option>
+              <option value="chicken">Chicken</option>
+              <option value="seafoods">Seafoods</option>
+              <option value="beef">Beef</option>
+              <option value="noodles">Noodles/Pasta</option>
+              <option value="vegies">Vegies/Others</option>
+              <option value="dessert">Dessert</option>
+              <option value="rice">Rice</option>
+            </select>
           </div>
 
           <div className="px-6 py-4 max-w-md">
-            <h4 className="text-lg font-semibold text-gray-900">
-              Selected Menu Type
-            </h4>
+            <h4 className="text-lg font-semibold text-gray-900">Selected Menu Type</h4>
             <p className="text-gray-700 text-base mb-4">
               {selectedMenuType || "No menu type selected"}
             </p>
-
             {selectedMenuType === "Buffet Type" && (
-              <div>
-                <h5 className="font-bold">
-                  BUFFET TYPE SERVICES: P380 / person
-                </h5>
-                <ul className="list-disc ml-6">
-                  <li>One (1) Appetizer / Salad</li>
-                  <li>Five (5) Entrée’s</li>
-                  <li>One (1) Dessert</li>
-                  <li>One (1) Choice of Rice</li>
-                  <li>One (1) Bottled Soft drink / person</li>
-                  <li>Purified Water</li>
-                </ul>
-              </div>
+              <div><h5 className="font-bold">BUFFET TYPE SERVICES:</h5>
+              <p>
+              Our Buffet Type service offers a delicious variety of dishes,
+              perfect for gatherings where guests can enjoy a relaxed,
+              self-serve dining experience. Ideal for weddings, family
+              events, and social occasions.
+              </p></div>
             )}
-
             {selectedMenuType === "Packed Meals" && (
-              <div>
-                <h5 className="font-bold">PACKED MEAL</h5>
-                <p>
-                  Packed in a styrofoam, spoon, fork, and toothpick included.
-                </p>
-                <ul className="list-disc ml-6">
-                  <li>
-                    Packed Menu Php 280.00: 3 Main Dishes, 1 Dessert, Rice,
-                    Juice in tetra pack
-                  </li>
-                  <li>
-                    Packed Menu Php 260.00: 2 Main Dishes, 1 Dessert, Rice,
-                    Juice in tetra pack
-                  </li>
-                  <li>
-                    Packed Menu Php 250.00: 2 Main Dishes, Rice, Juice in tetra
-                    pack
-                  </li>
-                </ul>
-              </div>
+              <div><h5 className="font-bold">PACKED MEAL</h5><p>Packed in a styrofoam, spoon, fork, and toothpick included.</p></div>
             )}
-
             {selectedMenuType === "Cocktail Type" && (
-              <div>
-                <h5 className="font-bold">COCKTAIL TYPE SERVICE</h5>
-                <p>
-                  Business meetings, company launching, event opening, VIP
-                  gatherings, and other functions may avail of our
-                  well-personalized customer cocktail party service.
-                </p>
-              </div>
+              <div><h5 className="font-bold">COCKTAIL TYPE SERVICE</h5>
+              <p>
+                Business meetings, company launching, event opening, VIP
+                gatherings, and other functions may avail of our
+                well-personalized customer cocktail party service.
+              </p></div>
             )}
           </div>
         </div>
 
-        <div
-          className="prose p-6 overflow-y-auto"
-          style={{ maxHeight: "50vh" }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full w-full">
-            {menuItems.map((item, index) => (
-              <div
-                key={index}
-                className="relative m-4 flex w-full max-w-xs flex-col overflow-hidden rounded-lg border border-gray-100 bg-white shadow-md"
-              >
-                <a
-                  className="relative mx-3 mt-3 flex h-60 overflow-hidden rounded-xl justify-center"
-                  href="#"
-                >
-                  <img
-                    className="object-cover"
-                    src={item.image}
-                    alt="product image"
-                  />
+        {/* Menu Items */}
+        <div className="prose p-6 overflow-y-auto" style={{ maxHeight: "50vh" }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {filteredItems.map((item, index) => (
+              <div key={index} className="relative m-4 flex w-full max-w-xs flex-col overflow-hidden rounded-lg border bg-white shadow-md">
+                <a className="relative mx-3 mt-3 h-60 overflow-hidden rounded-xl flex justify-center" href="#">
+                  <img className="object-cover" src={item.image} alt="product" />
                 </a>
                 <div className="mt-4 px-5 pb-5">
-                  <a href="#">
-                    <h5 className="text-xl tracking-tight text-slate-900">
-                      {item.name}
-                    </h5>
-                  </a>
-                  <div className="mt-2 mb-5 flex items-center justify-between">
-                    <p>
-                      <span className="text-3xl font-bold text-slate-900">
-                        ₱{item.price}
-                      </span>
-                    </p>
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <svg
-                          key={i}
-                          aria-hidden="true"
-                          className="h-5 w-5 text-yellow-300"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                        </svg>
-                      ))}
-                      <span className="mr-2 ml-3 rounded bg-yellow-200 px-2.5 py-0.5 text-xs font-semibold">
-                        5.0
-                      </span>
-                    </div>
-                  </div>
+                  <h5 className="text-xl text-slate-900">{item.name}</h5>
+                  <p className="text-3xl font-bold text-slate-900">₱{item.price}</p>
                   <button
                     onClick={() => handleAddToCart(item)}
-                    className="flex items-center justify-center rounded-md bg-slate-900 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                    className="flex items-center justify-center rounded-md bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="mr-2 h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
                     Add to cart
                   </button>
                 </div>
@@ -278,6 +248,7 @@ const MenuModal = ({
           </div>
         </div>
 
+        {/* Footer */}
         <div className="bg-gray-50 px-4 py-3 flex items-center justify-between fixed bottom-0 left-0 w-full lg:w-full mx-auto border-t border-gray-200">
           <label
             tabIndex={0}

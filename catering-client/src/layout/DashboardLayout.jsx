@@ -82,11 +82,6 @@ const DashboardLayout = () => {
             </Link>
           </li>
           <li>
-            <Link to="/dashboard">
-              <FaShoppingBag /> Manage Bookings
-            </Link>
-          </li>
-          <li>
             <Link to="/dashboard/add-menu">
               <FaPlusCircle />
               Add Menu
@@ -105,14 +100,25 @@ const DashboardLayout = () => {
             </Link>
           </li>
           <li>
+            <Link to="/dashboard/add-venue">
+              <FaPlusCircle />
+              Add Venue
+            </Link>
+          </li>
+          <li>
             <Link to="/dashboard/add-voucher">
               <FaPlusCircle />
               Add Voucher
             </Link>
           </li>
           <li>
+            <Link to="/dashboard/manage-bookings">
+              <FaShoppingBag /> Manage Bookings
+            </Link>
+          </li>
+          <li>
             <Link to="/dashboard/manage-items">
-              <FaEdit /> Manage Items
+              <FaEdit /> Manage Foods
             </Link>
           </li>
           <li>
@@ -121,16 +127,25 @@ const DashboardLayout = () => {
             </Link>
           </li>
           <li>
+            <Link to="/dashboard/manage-venues">
+              <FaEdit /> Manage Venues
+            </Link>
+          </li>
+          <li>
             <Link to="/dashboard/manage-vouchers">
               <FaEdit /> Manage Vouchers
             </Link>
           </li>
-          <li className="mb-3">
+          <li className="">
+            <Link to="/dashboard/orderconfirmed">
+              <FaUser /> Booking Confirmed
+            </Link>
+          </li>
+          <li className="">
             <Link to="/dashboard/users">
               <FaUser /> All Users
             </Link>
           </li>
-
           <hr />
       
 

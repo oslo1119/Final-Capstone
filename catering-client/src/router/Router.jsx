@@ -26,6 +26,13 @@ import ManageVouchers from "../pages/dashboard/admin/ManageVouchers";
 import UpdateVoucher from "../pages/dashboard/admin/UpdateVoucher";
 import OnlineBooking from "../pages/bookPage/OnlineBooking"
 import AddPackage from "../pages/dashboard/admin/AddPackage";
+import Venue from "../pages/venuePage/Venue";
+import AddVenue from "../pages/dashboard/admin/AddVenue";
+import UpdateVenue from "../pages/dashboard/admin/UpdateVenue";
+import ManageVenues from "../pages/dashboard/admin/ManageVenues";
+import ManageBookings from "../pages/dashboard/admin/ManageBookings";
+import VenueDetails from "../pages/venuePage/VenueDetails";
+import OrderConfirmed from "../pages/dashboard/admin/OrderConfirmed";
 const router = createBrowserRouter([
     {
       path: "/",
@@ -41,7 +48,7 @@ const router = createBrowserRouter([
         },
         {
           path: "/order",
-          element:<PrivateRoute><Order/></PrivateRoute>
+          element:<Order/>
         },
         {
           path: "/update-profile",
@@ -67,10 +74,20 @@ const router = createBrowserRouter([
           path: "rentaldetails/:id",
           element: <RentalDetails/>,
         },
+        {
+          path: "venuedetails/:id",
+          element: <VenueDetails/>,
+        },
+
 
         {
           path: "/book",
           element: <OnlineBooking/>
+        },
+        
+        {
+          path: "/venue",
+          element: <Venue/>
         },
   
 
@@ -107,24 +124,44 @@ const router = createBrowserRouter([
           element: <AddRental/>
         },
         {
+          path: 'add-venue',
+          element: <AddVenue/>
+        },
+        {
           path: 'add-voucher',
           element: <AddVoucher/>
         },
         {
           path: 'add-package',
           element: <AddPackage/>
-        },
+        }, 
         {
           path: "manage-items",
           element: <ManageItems/>
+        },
+        {
+          path: "manage-bookings",
+          element: <ManageBookings/>
         },
         {
           path: "manage-rentals",
           element: <ManageRentals/>
         },
         {
+          path: "manage-venues",
+          element: <ManageVenues/>
+        },
+        {
           path: "manage-vouchers",
           element: <ManageVouchers/>
+        },
+        {
+          path: "manage-venues",
+          element: <ManageVouchers/>
+        },
+        {
+          path: "orderconfirmed",
+          element: <OrderConfirmed/>
         },
         {
           path: "update-menu/:id",
@@ -135,6 +172,11 @@ const router = createBrowserRouter([
           path: "update-rental/:id",
           element: <UpdateRental/>,
           loader: ({params}) => fetch(`http://localhost:6001/rental/${params.id}`)
+        },
+        {
+          path: "update-venues/:id",
+          element: <UpdateVenue/>,
+          loader: ({params}) => fetch(`http://localhost:6001/venues/${params.id}`)
         },
         {
           path: "update-voucher/:id",
